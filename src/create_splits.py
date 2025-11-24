@@ -15,16 +15,58 @@ os.makedirs(META_DIR, exist_ok=True)
 CLASS_NAMES = ["normal", "benign", "malignant"]  # define order explicitly
 
 
+# def collect_samples():
+#     rows = []
+#     for label_name in CLASS_NAMES:
+#         main_dir = os.path.join(DATA_ROOT, label_name, "main")
+#         for fname in os.listdir(main_dir):
+#             if not fname.lower().endswith((".png", ".jpg", ".jpeg")):
+#                 continue
+#             rel_image_path = os.path.join("data", "train_images", label_name, "main", fname)
+#             rows.append({"image_path": rel_image_path, "label_name": label_name})
+#     return pd.DataFrame(rows)
+
+# new columns added:
+# main_image_path, mask_path, extra_mask_path
+
 def collect_samples():
     rows = []
     for label_name in CLASS_NAMES:
-        main_dir = os.path.join(DATA_ROOT, label_name, "main")
+        base_dir = os.path.join(DATA_ROOT, label_name)
+
+        main_dir = os.path.join(base_dir, "main")
+        mask_dir = os.path.join(base_dir, "mask")
+        extra_dir = os.path.join(base_dir, "extra_mask")
+
         for fname in os.listdir(main_dir):
             if not fname.lower().endswith((".png", ".jpg", ".jpeg")):
                 continue
-            rel_image_path = os.path.join("data", "train_images", label_name, "main", fname)
-            rows.append({"image_path": rel_image_path, "label_name": label_name})
+            
+            # main
+            main_path = os.path.join("data", "train_images", label_name, "main", fname)
+
+            # mask (same name + "_mask")
+            name, ext = os.path.splitext(fname)
+            mask_name = f"{name}_mask{ext}"
+            mask_path = os.path.join("data", "train_images", label_name, "mask", mask_name)
+            if not os.path.exists(mask_path):
+                mask_path = None
+
+            # extra mask (optional)
+            extra_name = f"{name}_mask_1{ext}"
+            extra_mask_path = os.path.join("data", "train_images", label_name, "extra_mask", extra_name)
+            if not os.path.exists(extra_mask_path):
+                extra_mask_path = None
+
+            rows.append({
+                "main_image": main_path,
+                "mask_image": mask_path,
+                "extra_mask_image": extra_mask_path,
+                "label_name": label_name
+            })
+
     return pd.DataFrame(rows)
+
 
 
 def main():
@@ -44,8 +86,8 @@ def main():
     train_df = train_df.reset_index(drop=True)
     val_df = val_df.reset_index(drop=True)
 
-    train_path = os.path.join(META_DIR, "train.csv")
-    val_path = os.path.join(META_DIR, "val.csv")
+    train_path = os.path.join(META_DIR, "train2.csv")
+    val_path = os.path.join(META_DIR, "val2.csv")
     train_df.to_csv(train_path, index=False)
     val_df.to_csv(val_path, index=False)
 
