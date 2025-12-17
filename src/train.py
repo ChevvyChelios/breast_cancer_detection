@@ -1,4 +1,4 @@
-# src/train.py
+
 import os
 import json
 import time
@@ -87,6 +87,10 @@ def main():
     num_epochs = 25
     lr = 1e-4
 
+    train_losses, val_losses = [], []
+    train_accs, val_accs = [], []
+
+
     # Datasets & loaders
     train_dataset = BreastUltrasoundDataset(train_csv, augment=True)
     val_dataset = BreastUltrasoundDataset(val_csv, augment=False)
@@ -130,7 +134,21 @@ def main():
             torch.save(model.state_dict(), best_model_path)
             print(f"--> Saved best model with val acc = {best_val_acc:.4f}")
 
+        train_losses.append(train_loss)
+        val_losses.append(val_loss)
+        train_accs.append(train_acc)
+        val_accs.append(val_acc)
+
+
     print("Training finished. Best val acc:", best_val_acc)
+
+    with open("models/training_metrics.json", "w") as f:
+        json.dump({
+            "train_loss": train_losses,
+            "val_loss": val_losses,
+            "train_acc": train_accs,
+            "val_acc": val_accs
+        }, f, indent=2)
 
     # Final detailed report
     print("Final validation confusion matrix:")

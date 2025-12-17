@@ -1,5 +1,6 @@
 import pandas as pd
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_auc_score
+
 
 def normalize_label(x):
     if isinstance(x, str):
@@ -8,21 +9,15 @@ def normalize_label(x):
 
 def main():
     gt_path = "data/test_images/test_metadata.csv"
-    # pred_path = "data/test_images/test_predictions1.csv"
     pred_path = "data/test_images/test_predictions2.csv"
 
     df_gt = pd.read_csv(gt_path)
     df_pred = pd.read_csv(pred_path)
-
-    # --- FIX 1: Clean Column Headers ---
-    # This removes hidden spaces (e.g., "classification " -> "classification")
     df_gt.columns = df_gt.columns.str.strip()
     df_pred.columns = df_pred.columns.str.strip()
 
     print("Ground Truth Columns found:", df_gt.columns.tolist())
     
-    # Normalize labels
-    # Ensure 'classification' exists before applying
     if "classification" not in df_gt.columns:
         print("ERROR: 'classification' column not found in Ground Truth CSV.")
         print("Available columns:", df_gt.columns.tolist())
@@ -31,10 +26,7 @@ def main():
     df_gt["classification"] = df_gt["classification"].apply(normalize_label)
     df_pred["predicted_label"] = df_pred["predicted_label"].apply(normalize_label)
 
-    # --- FIX 2: Merge with explicit suffixes ---
-    # If 'classification' exists in both, this ensures we know which is which.
-    # 'classification' from GT becomes 'classification_gt'
-    # 'classification' from Pred becomes 'classification_pred'
+  
     df = df_gt.merge(df_pred, on="Image_filename", how="inner", suffixes=('_gt', '_pred'))
 
     print(f"Merged {len(df)} rows. Columns in merged df: {df.columns.tolist()}")
@@ -54,13 +46,20 @@ def main():
     acc = accuracy_score(y_true, y_pred)
     print(f"Test Accuracy: {acc:.4f}")
 
-    # Confusion Matrix
-    print("\nConfusion Matrix:")
-    print(confusion_matrix(y_true, y_pred))
+    cm = confusion_matrix(y_true, y_pred)
+    print("Confusion Matrix:\n", cm)
 
-    # Classification Report
     print("\nClassification Report:")
     print(classification_report(y_true, y_pred))
+
+    def specificity(cm, class_idx):
+        TN = cm.sum() - (cm[class_idx,:].sum() + cm[:,class_idx].sum() - cm[class_idx,class_idx])
+        FP = cm[:,class_idx].sum() - cm[class_idx,class_idx]
+        return TN / (TN + FP)
+
+    for i, label in enumerate(["normal", "benign", "malignant"]):
+        print(f"Specificity ({label}): {specificity(cm, i):.4f}")
+
 
 if __name__ == "__main__":
     main()

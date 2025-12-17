@@ -1,4 +1,4 @@
-# src/model.py
+
 import torch.nn as nn
 from torchvision import models
 
